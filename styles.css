@@ -73,8 +73,8 @@ input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px
 .auth-tab.active { background: var(--surface); color: var(--text-main); }
 #error-msg { color: var(--primary); font-size: 0.9rem; margin-top: 1rem; text-align: center; }
 
-.top-nav { display: flex; justify-content: space-between; padding-bottom: 1rem; }
-.nav-buttons-left, .nav-buttons-right { display: flex; gap: 0.5rem; }
+.top-nav { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; padding-bottom: 1rem; }
+.nav-buttons-left, .nav-buttons-right { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
