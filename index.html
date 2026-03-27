@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DOTACIÓN TURNAZO 1</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Autenticación -->
+    <section id="view-auth" class="glass-card">
+      <h1>TURNAZO 1</h1>
+      <div class="auth-switch">
+        <div class="auth-tab active" id="tab-login" onclick="app.switchAuth('login')">Entrar</div>
+        <div class="auth-tab" id="tab-register" onclick="app.switchAuth('register')">Registro</div>
+      </div>
+      
+      <div class="form-group">
+        <label>Nick</label>
+        <input type="text" id="auth-nick" placeholder="Tu nombre o alias" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" id="auth-pass" placeholder="Tu contraseña">
+      </div>
+      <div class="form-group hidden" id="group-reg-pass">
+        <label>Contraseña de Registro (Seguridad)</label>
+        <input type="password" id="auth-reg-pass" placeholder="Contraseña maestra">
+      </div>
+      <div id="error-msg"></div>
+      
+      <button class="btn" onclick="app.submitAuth()">
+        <i data-lucide="shield-check"></i> Acceder
+      </button>
+    </section>
+
+    <!-- Barra Superior (Visible tras login) -->
+    <nav class="top-nav hidden" id="top-nav">
+      <button class="btn btn-secondary" style="width:auto; padding:0.5rem 1rem; font-size:0.9rem;" onclick="app.showHistory()">
+        <i data-lucide="history"></i> Ver Histórico
+      </button>
+      <button class="btn btn-secondary" style="width:auto; padding:0.5rem 1rem; font-size:0.9rem; margin-left: 0.5rem; color: #ef4444;" onclick="app.logout()">
+        <i data-lucide="log-out"></i> Salir
+      </button>
+    </nav>
+
+    <!-- Selección de Personal -->
+    <section id="view-selection" class="glass-card hidden">
+      <h2><i data-lucide="users" style="vertical-align: middle;"></i> Personal de Guardia</h2>
+      <p style="color:var(--text-muted); margin-bottom:1rem; font-size:0.9rem;">
+        Selecciona los integrantes presentes hoy en el turno.
+      </p>
+      
+      <div class="members-grid" id="members-container">
+        <!-- Rendered via JS -->
+      </div>
+
+      <h3 style="margin-bottom:1rem; font-size:1.1rem;">Personal / Efectivos Genéricos</h3>
+      <div class="counters-grid" id="counters-container">
+        <!-- Rendered via JS -->
+      </div>
+
+      <button class="btn" onclick="app.generateTurn()">
+        <i data-lucide="calendar-check"></i> Generar Dotación
+      </button>
+    </section>
+
+    <!-- Revisión de Dotación -->
+    <section id="view-review" class="glass-card hidden">
+      <h2><i data-lucide="clipboard-list" style="vertical-align: middle;"></i> Dotación del Día</h2>
+      <p style="color:var(--text-muted); margin-bottom:1.5rem; font-size:0.9rem;">
+        Revisa las posiciones. Puedes modificar a los efectivos usando los desplegables.
+      </p>
+      
+      <div class="positions-list" id="positions-container">
+        <!-- Rendered via JS -->
+      </div>
+
+      <div style="display:flex; gap:1rem; margin-top:2rem;">
+        <button class="btn btn-secondary" onclick="app.goBackToSelection()">Modificar Asistentes</button>
+        <button class="btn" style="background:var(--accent);" onclick="app.confirmTurn()">
+          <i data-lucide="check-circle"></i> Confirmar Turno
+        </button>
+      </div>
+    </section>
+
+    <!-- Histórico -->
+    <section id="view-history" class="glass-card hidden">
+      <h2><i data-lucide="book-open" style="vertical-align: middle;"></i> Histórico de Guardias</h2>
+      
+      <div id="history-list" style="max-height: 400px; overflow-y: auto; padding-right:0.5rem;">
+        <!-- Rendered via JS -->
+      </div>
+      
+      <button class="btn btn-secondary mt-4" onclick="app.closeHistory()">Volver</button>
+    </section>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
