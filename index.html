@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DOTACIÓN TURNAZO 1</title>
+  <title>DOTACIÓN TURNAZO 2.0</title>
   <link rel="stylesheet" href="styles.css">
-  <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
@@ -13,7 +12,7 @@
     
     <!-- Autenticación -->
     <section id="view-auth" class="glass-card">
-      <h1>TURNAZO 1</h1>
+      <h1>TURNAZO 2.0</h1>
       <div class="auth-switch">
         <div class="auth-tab active" id="tab-login" onclick="app.switchAuth('login')">Entrar</div>
         <div class="auth-tab" id="tab-register" onclick="app.switchAuth('register')">Registro</div>
@@ -28,9 +27,12 @@
         <input type="password" id="auth-pass" placeholder="Tu contraseña">
       </div>
       <div class="form-group hidden" id="group-reg-pass">
-        <label>Contraseña de Registro (Seguridad)</label>
-        <input type="password" id="auth-reg-pass" placeholder="Contraseña maestra">
+        <label>Contraseña Maestra (Obligatorio para registro)</label>
+        <input type="password" id="auth-reg-pass" placeholder="JaimeMola">
       </div>
+      <p id="first-user-warning" style="color:var(--accent); font-size:0.85em; margin-bottom:1rem; text-align:center;" class="hidden">
+        No hay usuarios. El primero en registrarse será el Master.
+      </p>
       <div id="error-msg"></div>
       
       <button class="btn" onclick="app.submitAuth()">
@@ -38,14 +40,18 @@
       </button>
     </section>
 
-    <!-- Barra Superior (Visible tras login) -->
+    <!-- Barra Superior -->
     <nav class="top-nav hidden" id="top-nav">
-      <button class="btn btn-secondary" style="width:auto; padding:0.5rem 1rem; font-size:0.9rem;" onclick="app.showHistory()">
-        <i data-lucide="history"></i> Ver Histórico
-      </button>
-      <button class="btn btn-secondary" style="width:auto; padding:0.5rem 1rem; font-size:0.9rem; margin-left: 0.5rem; color: #ef4444;" onclick="app.logout()">
-        <i data-lucide="log-out"></i> Salir
-      </button>
+      <div class="nav-buttons-left">
+          <button class="btn-sm btn-secondary" onclick="app.showEmisoraList()">🎙️ Emisora</button>
+          <button class="btn-sm btn-secondary btn-master hidden" onclick="app.showAdmin()">⚙️ Admin</button>
+      </div>
+      <div class="nav-buttons-right">
+          <button class="btn-sm btn-secondary" onclick="app.showHistory()">📚 Histórico & Stats</button>
+          <button class="btn-sm btn-secondary" style="color:var(--primary);" onclick="app.logout()">
+            <i data-lucide="log-out" style="width:16px;height:16px;"></i> Salir
+          </button>
+      </div>
     </nav>
 
     <!-- Selección de Personal -->
@@ -55,16 +61,12 @@
         Selecciona los integrantes presentes hoy en el turno.
       </p>
       
-      <div class="members-grid" id="members-container">
-        <!-- Rendered via JS -->
-      </div>
+      <div class="members-grid" id="members-container"></div>
 
-      <h3 style="margin-bottom:1rem; font-size:1.1rem;">Personal / Efectivos Genéricos</h3>
-      <div class="counters-grid" id="counters-container">
-        <!-- Rendered via JS -->
-      </div>
+      <h3 style="margin-top:2rem; margin-bottom:1rem; font-size:1.1rem;">Personal Genérico</h3>
+      <div class="counters-grid" id="counters-container"></div>
 
-      <button class="btn" onclick="app.generateTurn()">
+      <button class="btn mt-4" onclick="app.generateTurn()">
         <i data-lucide="calendar-check"></i> Generar Dotación
       </button>
     </section>
@@ -72,13 +74,8 @@
     <!-- Revisión de Dotación -->
     <section id="view-review" class="glass-card hidden">
       <h2><i data-lucide="clipboard-list" style="vertical-align: middle;"></i> Dotación del Día</h2>
-      <p style="color:var(--text-muted); margin-bottom:1.5rem; font-size:0.9rem;">
-        Revisa las posiciones. Puedes modificar a los efectivos usando los desplegables.
-      </p>
       
-      <div class="positions-list" id="positions-container">
-        <!-- Rendered via JS -->
-      </div>
+      <div class="positions-list" id="positions-container"></div>
 
       <div style="display:flex; gap:1rem; margin-top:2rem;">
         <button class="btn btn-secondary" onclick="app.goBackToSelection()">Modificar Asistentes</button>
@@ -88,16 +85,66 @@
       </div>
     </section>
 
-    <!-- Histórico -->
+    <!-- Histórico y Estadísticas -->
     <section id="view-history" class="glass-card hidden">
-      <h2><i data-lucide="book-open" style="vertical-align: middle;"></i> Histórico de Guardias</h2>
+      <h2><i data-lucide="bar-chart-2" style="vertical-align: middle;"></i> Panel de Datos</h2>
       
-      <div id="history-list" style="max-height: 400px; overflow-y: auto; padding-right:0.5rem;">
-        <!-- Rendered via JS -->
+      <div class="tabs-container">
+        <button class="tab-btn active" onclick="app.switchHistoryTab('hist')">Historial</button>
+        <button class="tab-btn" onclick="app.switchHistoryTab('stats')">Estadísticas</button>
+        <button class="tab-btn" onclick="app.switchHistoryTab('cara')">Ranking Carapiedra</button>
+      </div>
+
+      <div id="tab-hist" class="tab-content active">
+        <div id="history-list"></div>
+      </div>
+      <div id="tab-stats" class="tab-content">
+        <div class="table-responsive" id="stats-table-container"></div>
+      </div>
+      <div id="tab-cara" class="tab-content">
+        <p style="color:var(--text-muted); font-size:0.85em; margin-bottom:1rem;">
+          Ranking de Faltas: Veces que el integrante NO ha sido seleccionado para la dotación de guardia (de mayor a menor).
+        </p>
+        <div class="table-responsive" id="carapiedra-container"></div>
       </div>
       
-      <button class="btn btn-secondary mt-4" onclick="app.closeHistory()">Volver</button>
+      <button class="btn btn-secondary mt-4" onclick="app.closeHistory()">Atrás</button>
     </section>
+
+    <!-- Modal Admin -->
+    <div id="modal-admin" class="modal-overlay hidden">
+      <div class="modal-content glass-card">
+        <h2>🛠️ Panel Master</h2>
+        
+        <div class="admin-grid" id="admin-members-list"></div>
+        
+        <h3 style="margin-top:2rem; font-size:1.1rem;">Añadir Integrante</h3>
+        <div style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1.5rem;">
+          <input type="text" id="new-member-name" placeholder="Nombre">
+          <!-- Estadísticas Iniciales de ejemplo, se asume que las más importantes son faltas, EM, BC1, BB1... simplificado a faltas para no inflar la UI, o un textarea JSON? El usuario pidió "establecer sus estadisticas iniciales" -->
+          <input type="number" id="new-member-absences" placeholder="Faltas iniciales (Carapiedra)" value="0" min="0">
+          <input type="number" id="new-member-em" placeholder="Veces iniciales de EM" value="0" min="0">
+          <input type="number" id="new-member-bc1" placeholder="Veces iniciales de BC1" value="0" min="0">
+          <input type="number" id="new-member-bb1" placeholder="Veces iniciales de BB1" value="0" min="0">
+          <p style="font-size:0.8em; color:gray;">(Si se requieren de otros roles, se asignarán por defecto a 0). Faltas se cuenta en Carapiedra.</p>
+          <button class="btn" style="background:var(--accent);" onclick="app.addMember()">Añadir</button>
+        </div>
+
+        <button class="btn btn-secondary" onclick="document.getElementById('modal-admin').classList.add('hidden')">Cerrar</button>
+      </div>
+    </div>
+
+    <!-- Modal Emisora -->
+    <div id="modal-emisora" class="modal-overlay hidden">
+      <div class="modal-content glass-card">
+        <h2>🎙️ Listado de Emisora (EM)</h2>
+        <p style="color:var(--text-muted); font-size:0.85em; margin-bottom:1rem;">
+           Veces que ha hecho cada miembro del turno de EM (excluyendo a Pablo).
+        </p>
+        <div class="table-responsive" id="emisora-container"></div>
+        <button class="btn btn-secondary mt-4" onclick="document.getElementById('modal-emisora').classList.add('hidden')">Cerrar</button>
+      </div>
+    </div>
 
   </div>
 

@@ -1,17 +1,30 @@
-const MEMBERS = ['Jaime', 'Balduque', 'Oscar', 'Edu', 'Javi', 'Victor', 'Marcos', 'Luis', 'Pablo'];
-const GENERICS = ['BB', 'BC', 'EM', 'AMP', 'EX'];
+const DEFAULT_MEMBERS = ['Jaime', 'Balduque', 'Oscar', 'Edu', 'Javi', 'Victor', 'Marcos', 'Luis', 'Pablo'];
+const GENERICS = ['BB', 'BC', 'EM'];
 
 const STATE = {
   users: JSON.parse(localStorage.getItem('dt_users') || '[]'),
   stats: JSON.parse(localStorage.getItem('dt_stats') || '{}'),
   history: JSON.parse(localStorage.getItem('dt_history') || '[]'),
+  members: JSON.parse(localStorage.getItem('dt_members') || 'null'),
   currentUser: null,
+  isMaster: false,
   authMode: 'login',
   presentMembers: [],
-  genericsCount: { BB:0, BC:0, EM:0, AMP:0, EX:0 },
-  currentTurn: {},   // { role: assigned_name }
-  rolesGenerated: [] // order of roles
+  genericsCount: { BB:0, BC:0, EM:0 },
+  currentTurn: {},   
+  rolesGenerated: [] 
 };
+
+// Inicializar miembros si no existen
+if (!STATE.members) {
+    STATE.members = [...DEFAULT_MEMBERS];
+    localStorage.setItem('dt_members', JSON.stringify(STATE.members));
+}
+
+// Inicializar stats básicos
+STATE.members.forEach(m => {
+    if (!STATE.stats[m]) STATE.stats[m] = { absences: 0 };
+});
 
 const app = {
   init() {
@@ -19,11 +32,21 @@ const app = {
     this.renderMembers();
     this.renderCounters();
     
-    // Check if logged in in sessionStorage
+    // Warning first user
+    if (STATE.users.length === 0) {
+        document.getElementById('first-user-warning').classList.remove('hidden');
+    }
+    
     const current = sessionStorage.getItem('dt_current');
     if(current) {
-        STATE.currentUser = current;
-        this.showView('selection');
+        let u = STATE.users.find(x => x.nick === current);
+        if(u) {
+            STATE.currentUser = current;
+            STATE.isMaster = !!u.isMaster;
+            this.showView('selection');
+        } else {
+            this.showView('auth');
+        }
     } else {
         this.showView('auth');
     }
@@ -33,14 +56,20 @@ const app = {
     document.querySelectorAll('section').forEach(el => el.classList.add('hidden'));
     document.getElementById('view-' + viewId).classList.remove('hidden');
     
-    // Top nav logic
     if(viewId !== 'auth') {
         document.getElementById('top-nav').classList.remove('hidden');
+        if(STATE.isMaster) {
+            document.querySelectorAll('.btn-master').forEach(el => el.classList.remove('hidden'));
+        }
     } else {
         document.getElementById('top-nav').classList.add('hidden');
     }
     
-    if (viewId === 'history') this.renderHistory();
+    if (viewId === 'history') {
+        this.renderHistory();
+        this.renderStats();
+        this.renderCarapiedra();
+    }
   },
 
   switchAuth(mode) {
@@ -61,30 +90,26 @@ const app = {
     const pass = document.getElementById('auth-pass').value.trim();
     const errorMsg = document.getElementById('error-msg');
     
-    if(!nick || !pass) {
-        errorMsg.innerText = "Rellena todos los campos";
-        return;
-    }
+    if(!nick || !pass) return errorMsg.innerText = "Rellena todos los campos";
 
     if (STATE.authMode === 'register') {
         const regPass = document.getElementById('auth-reg-pass').value.trim();
-        if (regPass !== 'JaimeMola') {
-            errorMsg.innerText = "Contraseña de registro incorrecta.";
-            return;
-        }
-        if (STATE.users.find(u => u.nick === nick)) {
-            errorMsg.innerText = "Este nick ya existe.";
-            return;
-        }
-        STATE.users.push({ nick, pass });
+        if (regPass !== 'JaimeMola') return errorMsg.innerText = "Contraseña maestra incorrecta.";
+        if (STATE.users.find(u => u.nick === nick)) return errorMsg.innerText = "Este nick ya existe.";
+        
+        let isMaster = STATE.users.length === 0;
+        STATE.users.push({ nick, pass, isMaster });
         localStorage.setItem('dt_users', JSON.stringify(STATE.users));
+        
         STATE.currentUser = nick;
+        STATE.isMaster = isMaster;
         sessionStorage.setItem('dt_current', nick);
         this.showView('selection');
     } else {
         const user = STATE.users.find(u => u.nick === nick && u.pass === pass);
         if (user) {
             STATE.currentUser = nick;
+            STATE.isMaster = !!user.isMaster;
             sessionStorage.setItem('dt_current', nick);
             this.showView('selection');
         } else {
@@ -95,6 +120,7 @@ const app = {
 
   logout() {
       STATE.currentUser = null;
+      STATE.isMaster = false;
       sessionStorage.removeItem('dt_current');
       this.showView('auth');
   },
@@ -102,7 +128,9 @@ const app = {
   renderMembers() {
     const container = document.getElementById('members-container');
     container.innerHTML = '';
-    MEMBERS.forEach(m => {
+    STATE.presentMembers = STATE.presentMembers.filter(m => STATE.members.includes(m)); // Limpiar borrados
+    
+    STATE.members.forEach(m => {
         const div = document.createElement('div');
         div.className = `member-toggle ${STATE.presentMembers.includes(m) ? 'active' : ''}`;
         div.innerText = m;
@@ -154,10 +182,8 @@ const app = {
       
       const totalBomberos = availableNames.length + Object.values(availableGenerics).reduce((a,b)=>a+b, 0);
 
-      // Helper to assign a person to a role
       const setRole = (role, name) => {
           assignment[role] = name;
-          // remove from available if it's a specific name
           if (availableNames.includes(name)) {
              availableNames = availableNames.filter(n => n !== name);
           } else if (GENERICS.includes(name)) {
@@ -217,7 +243,7 @@ const app = {
       }
 
       // BBs
-      let bbNeeded = Math.max(5, totalBomberos - 4); // 4 positions are EM, BC1, BC2, BC3
+      let bbNeeded = Math.max(5, totalBomberos - 4); 
       for (let i = 1; i <= bbNeeded; i++) {
           let roleName = 'BB' + i;
           if (availableNames.length > 0) {
@@ -227,17 +253,11 @@ const app = {
               setRole(roleName, 'BB');
           } else if (availableGenerics.BC > 0) {
               setRole(roleName, 'BC');
-          } else if (availableGenerics.AMP > 0) {
-              setRole(roleName, 'AMP');
-          } else if (availableGenerics.EX > 0) {
-              setRole(roleName, 'EX');
           } else {
               setRole(roleName, 'VACÍO');
           }
       }
 
-      // Save to state
-      // Define correct display order
       const displayOrder = ['EM', 'BC1', 'BB1', 'BB2', 'BB3', 'BC2', 'BB4', 'BC3', 'BB5'];
       for(let i=6; i<=bbNeeded; i++) displayOrder.push('BB'+i);
 
@@ -251,21 +271,16 @@ const app = {
   renderReview() {
       const container = document.getElementById('positions-container');
       container.innerHTML = '';
-      
-      // All possible options for the dropdown
-      const allOptions = [...STATE.presentMembers, ...GENERICS, 'VACÍO'];
+      const allOptions = [...STATE.members, ...GENERICS, 'VACÍO'];
 
       STATE.rolesGenerated.forEach(role => {
           const currentPerson = STATE.currentTurn[role] || 'VACÍO';
-
           const div = document.createElement('div');
           div.className = 'position-item';
           
           let selectHtml = `<select class="position-select" onchange="app.updateTurnRole('${role}', this.value)">`;
           allOptions.forEach(opt => {
               const selected = opt === currentPerson ? 'selected' : '';
-              let mark = '';
-              // Mark invalid assignments in red conceptually or show note? We just trust the select.
               selectHtml += `<option value="${opt}" ${selected}>${opt}</option>`;
           });
           selectHtml += `</select>`;
@@ -287,31 +302,51 @@ const app = {
   },
 
   confirmTurn() {
-      // Registrar históricos
       const date = new Date().toLocaleString('es-ES');
-      const record = { date, positions: { ...STATE.currentTurn }, roles: [...STATE.rolesGenerated] };
-      STATE.history.unshift(record); // Add to beginning
-      localStorage.setItem('dt_history', JSON.stringify(STATE.history));
+      const record = { id: Date.now().toString(), date, positions: { ...STATE.currentTurn }, roles: [...STATE.rolesGenerated] };
+      STATE.history.unshift(record); 
+      
+      const assignedPeople = Object.values(STATE.currentTurn);
 
-      // Actualizar stats solo de personal nominativo (integrantes fijos)
+      // Actualizar stats operativos
       for (const role of STATE.rolesGenerated) {
           const person = STATE.currentTurn[role];
-          if (MEMBERS.includes(person)) {
-              if (!STATE.stats[person]) STATE.stats[person] = {};
+          if (STATE.members.includes(person)) {
+              if (!STATE.stats[person]) STATE.stats[person] = { absences: 0 };
               if (!STATE.stats[person][role]) STATE.stats[person][role] = 0;
               STATE.stats[person][role]++;
           }
       }
-      localStorage.setItem('dt_stats', JSON.stringify(STATE.stats));
 
+      // Sumar faltas Carapiedra (a los miembros de STATE.members que NO están en la dotación)
+      STATE.members.forEach(m => {
+          if (!assignedPeople.includes(m)) {
+              if (!STATE.stats[m]) STATE.stats[m] = { absences: 0 };
+              if (STATE.stats[m].absences === undefined) STATE.stats[m].absences = 0;
+              STATE.stats[m].absences++;
+          }
+      });
+
+      this.saveAll();
       alert("Dotación confirmada y guardada.");
       this.showHistory();
   },
 
-  showHistory() {
-      this.showView('history');
+  saveAll() {
+      localStorage.setItem('dt_history', JSON.stringify(STATE.history));
+      localStorage.setItem('dt_stats', JSON.stringify(STATE.stats));
+      localStorage.setItem('dt_members', JSON.stringify(STATE.members));
   },
 
+  // HISTORY & STATS VIEWS
+  switchHistoryTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('tab-' + tab).classList.add('active');
+  },
+
+  showHistory() { this.showView('history'); },
   closeHistory() {
       if(STATE.rolesGenerated.length > 0 && document.getElementById('positions-container').innerHTML !== '') {
           this.showView('review');
@@ -323,11 +358,7 @@ const app = {
   renderHistory() {
       const container = document.getElementById('history-list');
       container.innerHTML = '';
-      
-      if(STATE.history.length === 0) {
-          container.innerHTML = '<p style="color:var(--text-muted);">No hay históricos guardados.</p>';
-          return;
-      }
+      if(STATE.history.length === 0) return container.innerHTML = '<p style="color:var(--text-muted);">No hay históricos.</p>';
 
       STATE.history.forEach(record => {
           const div = document.createElement('div');
@@ -340,12 +371,192 @@ const app = {
               }
           });
 
+          // Solo master puede eliminar día de guardia por ahora
+          let delBtn = STATE.isMaster ? `<button class="btn-delete" onclick="app.deleteHistoryRecord('${record.id}')">Borrar</button>` : '';
+
           div.innerHTML = `
+             ${delBtn}
              <div class="history-date">${record.date}</div>
              <div class="history-positions">${posHtml}</div>
           `;
           container.appendChild(div);
       });
+  },
+
+  deleteHistoryRecord(id) {
+     if(confirm("¿Seguro que quieres borrar este registro? Sus estadísticas y faltas generadas se restarán automáticamente.")) {
+         let record = STATE.history.find(h => h.id === id);
+         if(record) {
+             // Restar las posiciones
+             record.roles.forEach(role => {
+                 let person = record.positions[role];
+                 if(STATE.stats[person] && STATE.stats[person][role] > 0) {
+                     STATE.stats[person][role]--;
+                 }
+             });
+             // Restar las faltas de Carapiedra al personal que no trabajó
+             const assignedPeople = Object.values(record.positions);
+             STATE.members.forEach(m => {
+                 if(!assignedPeople.includes(m) && STATE.stats[m] && STATE.stats[m].absences > 0) {
+                     STATE.stats[m].absences--;
+                 }
+             });
+         }
+         STATE.history = STATE.history.filter(h => h.id !== id);
+         this.saveAll();
+         this.renderHistory();
+         this.renderStats();
+         this.renderCarapiedra();
+     }
+  },
+
+  renderStats() {
+      const container = document.getElementById('stats-table-container');
+      
+      // Encontrar todos los roles existentes
+      let allRoles = new Set();
+      STATE.members.forEach(m => {
+          Object.keys(STATE.stats[m] || {}).forEach(k => {
+              if(k !== 'absences') allRoles.add(k);
+          });
+      });
+      let rolesArr = Array.from(allRoles).sort();
+
+      let table = `<table><thead><tr><th>Nombre</th><th>Totales</th>`;
+      rolesArr.forEach(r => table += `<th>${r}</th>`);
+      table += `</tr></thead><tbody>`;
+
+      STATE.members.forEach(m => {
+          const st = STATE.stats[m] || {absences:0};
+          let total = 0;
+          rolesArr.forEach(r => total += (st[r] || 0));
+          
+          table += `<tr>
+            <td><strong>${m}</strong></td>
+            <td>${total}</td>`;
+          
+          rolesArr.forEach(r => {
+             let count = st[r] || 0;
+             let perc = total > 0 ? Math.round((count / total) * 100) : 0;
+             table += `<td>${count} <span style="color:gray;font-size:0.8em">(${perc}%)</span></td>`;
+          });
+          table += `</tr>`;
+      });
+      table += `</tbody></table>`;
+      container.innerHTML = table;
+  },
+
+  renderCarapiedra() {
+      const container = document.getElementById('carapiedra-container');
+      let sorted = [...STATE.members].sort((a,b) => {
+          let fa = (STATE.stats[a] && STATE.stats[a].absences) || 0;
+          let fb = (STATE.stats[b] && STATE.stats[b].absences) || 0;
+          return fb - fa;
+      });
+
+      let html = `<table><thead><tr><th>Posición</th><th>Integrante</th><th>Faltas Totales</th></tr></thead><tbody>`;
+      sorted.forEach((m, idx) => {
+          let faltas = (STATE.stats[m] && STATE.stats[m].absences) || 0;
+          let medal = idx === 0 ? '🏆' : (idx===1 ? '🥈' : (idx===2?'🥉':(idx+1)));
+          html += `<tr><td>${medal}</td><td><strong>${m}</strong></td><td><span style="color:var(--primary);font-weight:bold">${faltas}</span></td></tr>`;
+      });
+      html += `</tbody></table>`;
+      container.innerHTML = html;
+  },
+
+  // EMISORA
+  showEmisoraList() {
+      document.getElementById('modal-emisora').classList.remove('hidden');
+      const container = document.getElementById('emisora-container');
+      
+      let filtered = STATE.members.filter(m => m !== 'Pablo');
+      filtered.sort((a,b) => {
+          let ea = this.getStat(a, 'EM');
+          let eb = this.getStat(b, 'EM');
+          return eb - ea;
+      });
+
+      let html = `<table><thead><tr><th>Integrante</th><th>Veces EM</th></tr></thead><tbody>`;
+      filtered.forEach(m => {
+          html += `<tr><td><strong>${m}</strong></td><td>${this.getStat(m, 'EM')}</td></tr>`;
+      });
+      html += `</tbody></table>`;
+      container.innerHTML = html;
+  },
+
+  // ADMIN PANE
+  showAdmin() {
+      document.getElementById('modal-admin').classList.remove('hidden');
+      this.renderAdminMembers();
+  },
+
+  renderAdminMembers() {
+      const container = document.getElementById('admin-members-list');
+      container.innerHTML = '';
+      STATE.members.forEach((m, idx) => {
+          container.innerHTML += `
+             <div class="admin-row">
+                 <input type="text" class="admin-input" id="admin-name-${idx}" value="${m}">
+                 <button class="btn-sm btn-secondary" onclick="app.updateMemberName(${idx}, '${m}')">Renombrar</button>
+                 <button class="btn-sm" style="background:var(--primary);color:white;border:none;" onclick="app.deleteMember(${idx}, '${m}')">Borrar</button>
+             </div>
+          `;
+      });
+  },
+
+  addMember() {
+      const input = document.getElementById('new-member-name');
+      const name = input.value.trim();
+      if(!name) return;
+      if(STATE.members.includes(name)) return alert("El integrante ya existe.");
+
+      let faltas = parseInt(document.getElementById('new-member-absences').value) || 0;
+      let em = parseInt(document.getElementById('new-member-em').value) || 0;
+      let bc1 = parseInt(document.getElementById('new-member-bc1').value) || 0;
+      let bb1 = parseInt(document.getElementById('new-member-bb1').value) || 0;
+
+      STATE.members.push(name);
+      STATE.stats[name] = { absences: faltas, EM: em, BC1: bc1, BB1: bb1 };
+      
+      input.value = "";
+      this.saveAll();
+      this.renderAdminMembers();
+      this.renderMembers();
+      alert("Integrante añadido con sus estadísticas iniciales.");
+  },
+
+  updateMemberName(idx, oldName) {
+      const input = document.getElementById(`admin-name-${idx}`);
+      const newName = input.value.trim();
+      if(!newName || newName === oldName) return;
+      if(STATE.members.includes(newName)) return alert("El nombre ya existe.");
+
+      STATE.members[idx] = newName;
+      STATE.stats[newName] = STATE.stats[oldName];
+      delete STATE.stats[oldName];
+      
+      // Update present list
+      if(STATE.presentMembers.includes(oldName)) {
+          STATE.presentMembers = STATE.presentMembers.filter(n => n !== oldName);
+          STATE.presentMembers.push(newName);
+      }
+
+      this.saveAll();
+      this.renderAdminMembers();
+      this.renderMembers();
+  },
+
+  deleteMember(idx, name) {
+      if(!confirm(`¿Seguro que quieres eliminar a ${name} para siempre? Sus estadísticas serán borradas.`)) return;
+      
+      STATE.members.splice(idx, 1);
+      delete STATE.stats[name];
+      
+      STATE.presentMembers = STATE.presentMembers.filter(n => n !== name);
+
+      this.saveAll();
+      this.renderAdminMembers();
+      this.renderMembers();
   }
 };
 
