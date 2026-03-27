@@ -194,12 +194,12 @@ const app = {
       // 1. EM
       if (availableNames.includes('Pablo')) {
           setRole('EM', 'Pablo');
+      } else if (availableGenerics.EM > 0) {
+          setRole('EM', 'EM');
       } else {
           if (availableNames.length > 0) {
               availableNames.sort((a,b) => this.getStat(a, 'EM') - this.getStat(b, 'EM'));
               setRole('EM', availableNames[0]);
-          } else if (availableGenerics.EM > 0) {
-              setRole('EM', 'EM');
           } else {
               setRole('EM', 'VACÍO');
           }
@@ -519,6 +519,7 @@ const app = {
              <div class="admin-row">
                  <input type="text" class="admin-input" id="admin-name-${idx}" value="${m}">
                  <button class="btn-sm btn-secondary" onclick="app.updateMemberName(${idx}, '${m}')">Renombrar</button>
+                 <button class="btn-sm btn-secondary" onclick="app.openEditStats('${m}')">📊 Stats</button>
                  <button class="btn-sm" style="background:var(--primary);color:white;border:none;" onclick="app.deleteMember(${idx}, '${m}')">Borrar</button>
              </div>
           `;
@@ -578,6 +579,59 @@ const app = {
       this.saveAll();
       this.renderAdminMembers();
       this.renderMembers();
+  },
+
+  openEditStats(name) {
+      document.getElementById('edit-stats-name').innerText = name;
+      const container = document.getElementById('edit-stats-container');
+      container.innerHTML = '';
+      
+      let st = STATE.stats[name] || { absences: 0 };
+      
+      let allRoles = new Set(['absences', 'EM', 'BC1', 'BC2', 'BC3', 'BB1', 'BB2', 'BB3', 'BB4', 'BB5']);
+      STATE.members.forEach(m => {
+          Object.keys(STATE.stats[m] || {}).forEach(k => allRoles.add(k));
+      });
+      
+      let rolesArr = Array.from(allRoles).sort();
+      STATE.editingStatsRoles = rolesArr;
+      STATE.editingStatsName = name;
+      
+      rolesArr.forEach(role => {
+          let val = st[role] || 0;
+          let label = role === 'absences' ? 'Faltas (Carapiedra)' : `Rol ${role}`;
+          container.innerHTML += `
+             <div style="display:flex; justify-content:space-between; align-items:center;">
+                 <label style="margin:0; width:150px; color:var(--text-main); font-weight:bold;">${label}</label>
+                 <input type="number" id="edit-stat-${role}" value="${val}" min="0" style="flex:1; padding:0.4rem; font-size:1.1rem; text-align:center;">
+             </div>
+          `;
+      });
+      document.getElementById('modal-edit-stats').classList.remove('hidden');
+  },
+
+  saveEditedStats() {
+      let name = STATE.editingStatsName;
+      if(!name) return;
+      if(!STATE.stats[name]) STATE.stats[name] = { absences: 0 };
+      
+      STATE.editingStatsRoles.forEach(role => {
+          let input = document.getElementById(`edit-stat-${role}`);
+          if(input) {
+              STATE.stats[name][role] = parseInt(input.value) || 0;
+          }
+      });
+      this.saveAll();
+      document.getElementById('modal-edit-stats').classList.add('hidden');
+      
+      if(!document.getElementById('view-history').classList.contains('hidden')) {
+          this.renderStats();
+          this.renderCarapiedra();
+      }
+      this.showEmisoraList(); // Actualizar memoria interna
+      document.getElementById('modal-emisora').classList.add('hidden'); // Ocultar por si acaso
+      
+      alert("Estadísticas actualizadas correctamente.");
   }
 };
 
