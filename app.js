@@ -476,12 +476,33 @@ const app = {
           return eb - ea;
       });
 
-      let html = `<table><thead><tr><th>Integrante</th><th>Veces EM</th></tr></thead><tbody>`;
+      let html = `<table><thead><tr><th>Integrante</th><th>Veces EM</th>${STATE.isMaster ? '<th>Ajuste (Master)</th>' : ''}</tr></thead><tbody>`;
       filtered.forEach(m => {
-          html += `<tr><td><strong>${m}</strong></td><td>${this.getStat(m, 'EM')}</td></tr>`;
+          let count = this.getStat(m, 'EM');
+          let ops = STATE.isMaster ? `<td>
+             <button class="btn-sm btn-secondary" style="padding:0.1rem 0.4rem;" onclick="app.offsetEmisora('${m}', -1)">-</button>
+             <button class="btn-sm btn-secondary" style="padding:0.1rem 0.4rem;" onclick="app.offsetEmisora('${m}', 1)">+</button>
+          </td>` : '';
+          
+          html += `<tr><td><strong>${m}</strong></td><td><span style="font-weight:bold; color:var(--accent);">${count}</span></td>${ops}</tr>`;
       });
       html += `</tbody></table>`;
       container.innerHTML = html;
+  },
+
+  offsetEmisora(m, amount) {
+      if(!STATE.stats[m]) STATE.stats[m] = { absences: 0 };
+      if(STATE.stats[m].EM === undefined) STATE.stats[m].EM = 0;
+      
+      STATE.stats[m].EM += amount;
+      if(STATE.stats[m].EM < 0) STATE.stats[m].EM = 0;
+      
+      this.saveAll();
+      this.showEmisoraList();
+      // Refrescar panel principal si está abierto
+      if(!document.getElementById('view-history').classList.contains('hidden')) {
+          this.renderStats();
+      }
   },
 
   // ADMIN PANE
