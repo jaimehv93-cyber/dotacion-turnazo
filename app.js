@@ -1,55 +1,93 @@
+const firebaseConfig = {
+  apiKey: "AIzaSyBXn_Vn9Wwl2YueBgBywF1RzGOa3RoRJBk",
+  authDomain: "turnazo-getafe.firebaseapp.com",
+  databaseURL: "https://turnazo-getafe-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "turnazo-getafe",
+  storageBucket: "turnazo-getafe.firebasestorage.app",
+  messagingSenderId: "481890553407",
+  appId: "1:481890553407:web:299c0c3e1da49f4988b28a"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
 const DEFAULT_MEMBERS = ['Jaime', 'Balduque', 'Oscar', 'Edu', 'Javi', 'Victor', 'Marcos', 'Luis', 'Pablo'];
 const GENERICS = ['BB', 'BC', 'EM'];
 
-const STATE = {
-  users: JSON.parse(localStorage.getItem('dt_users') || '[]'),
-  stats: JSON.parse(localStorage.getItem('dt_stats') || '{}'),
-  history: JSON.parse(localStorage.getItem('dt_history') || '[]'),
-  members: JSON.parse(localStorage.getItem('dt_members') || 'null'),
+let STATE = {
+  users: [],
+  stats: {},
+  history: [],
+  members: null,
   currentUser: null,
   isMaster: false,
   authMode: 'login',
   presentMembers: [],
   genericsCount: { BB:0, BC:0, EM:0 },
   currentTurn: {},   
-  rolesGenerated: [] 
+  rolesGenerated: [],
+  connectedOnce: false
 };
 
-// Inicializar miembros si no existen
-if (!STATE.members) {
-    STATE.members = [...DEFAULT_MEMBERS];
-    localStorage.setItem('dt_members', JSON.stringify(STATE.members));
-}
-
-// Inicializar stats básicos
-STATE.members.forEach(m => {
-    if (!STATE.stats[m]) STATE.stats[m] = { absences: 0 };
-});
 
 const app = {
   init() {
     lucide.createIcons();
-    this.renderMembers();
-    this.renderCounters();
     
-    // Warning first user
-    if (STATE.users.length === 0) {
-        document.getElementById('first-user-warning').classList.remove('hidden');
-    }
-    
-    const current = sessionStorage.getItem('dt_current');
-    if(current) {
-        let u = STATE.users.find(x => x.nick === current);
-        if(u) {
-            STATE.currentUser = current;
-            STATE.isMaster = !!u.isMaster;
-            this.showView('selection');
-        } else {
-            this.showView('auth');
+    db.ref('turnazo').on('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        STATE.users = data.users || [];
+        STATE.stats = data.stats || {};
+        STATE.history = data.history || [];
+        STATE.members = data.members || null;
+        
+        if (!STATE.members) {
+            STATE.members = [...DEFAULT_MEMBERS];
+            STATE.members.forEach(m => {
+                if (!STATE.stats[m]) STATE.stats[m] = { absences: 0 };
+            });
+            this.saveAll();
         }
-    } else {
-        this.showView('auth');
-    }
+
+        document.getElementById('loading-overlay').classList.add('hidden');
+        
+        this.renderMembers();
+        this.renderCounters();
+        if(!document.getElementById('view-history').classList.contains('hidden')) {
+            this.renderHistory();
+            this.renderStats();
+            this.renderCarapiedra();
+        }
+        if(!document.getElementById('modal-emisora').classList.contains('hidden')) {
+            this.showEmisoraList();
+        }
+        if(!document.getElementById('modal-admin').classList.contains('hidden')) {
+            this.renderAdminMembers();
+        }
+
+        if(!STATE.connectedOnce) {
+            STATE.connectedOnce = true;
+            if (STATE.users.length === 0) {
+                document.getElementById('first-user-warning').classList.remove('hidden');
+            } else {
+                document.getElementById('first-user-warning').classList.add('hidden');
+            }
+            const current = sessionStorage.getItem('dt_current');
+            if(current) {
+                let u = STATE.users.find(x => x.nick === current);
+                if(u) {
+                    STATE.currentUser = current;
+                    STATE.isMaster = !!u.isMaster;
+                    this.showView('selection');
+                } else {
+                    this.showView('auth');
+                }
+            } else {
+                this.showView('auth');
+            }
+        }
+    });
   },
 
   showView(viewId) {
@@ -99,7 +137,7 @@ const app = {
         
         let isMaster = STATE.users.length === 0;
         STATE.users.push({ nick, pass, isMaster });
-        localStorage.setItem('dt_users', JSON.stringify(STATE.users));
+        this.saveAll();
         
         STATE.currentUser = nick;
         STATE.isMaster = isMaster;
@@ -333,9 +371,14 @@ const app = {
   },
 
   saveAll() {
-      localStorage.setItem('dt_history', JSON.stringify(STATE.history));
-      localStorage.setItem('dt_stats', JSON.stringify(STATE.stats));
-      localStorage.setItem('dt_members', JSON.stringify(STATE.members));
+      db.ref('turnazo').set({
+          users: STATE.users,
+          stats: STATE.stats,
+          history: STATE.history,
+          members: STATE.members
+      }).catch(err => {
+          console.error("Firebase sync error: ", err);
+      });
   },
 
   // HISTORY & STATS VIEWS
