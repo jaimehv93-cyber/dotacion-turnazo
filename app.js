@@ -532,19 +532,14 @@ const app = {
       if(!name) return;
       if(STATE.members.includes(name)) return alert("El integrante ya existe.");
 
-      let faltas = parseInt(document.getElementById('new-member-absences').value) || 0;
-      let em = parseInt(document.getElementById('new-member-em').value) || 0;
-      let bc1 = parseInt(document.getElementById('new-member-bc1').value) || 0;
-      let bb1 = parseInt(document.getElementById('new-member-bb1').value) || 0;
-
       STATE.members.push(name);
-      STATE.stats[name] = { absences: faltas, EM: em, BC1: bc1, BB1: bb1 };
+      STATE.stats[name] = { absences: 0, EM: 0, BC1: 0, BB1: 0 };
       
       input.value = "";
       this.saveAll();
       this.renderAdminMembers();
       this.renderMembers();
-      alert("Integrante añadido con sus estadísticas iniciales.");
+      alert("Integrante añadido correctamente.");
   },
 
   updateMemberName(idx, oldName) {

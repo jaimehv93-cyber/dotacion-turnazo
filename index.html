@@ -120,13 +120,7 @@
         
         <h3 style="margin-top:2rem; font-size:1.1rem;">Añadir Integrante</h3>
         <div style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1.5rem;">
-          <input type="text" id="new-member-name" placeholder="Nombre">
-          <!-- Estadísticas Iniciales de ejemplo, se asume que las más importantes son faltas, EM, BC1, BB1... simplificado a faltas para no inflar la UI, o un textarea JSON? El usuario pidió "establecer sus estadisticas iniciales" -->
-          <input type="number" id="new-member-absences" placeholder="Faltas iniciales (Carapiedra)" value="0" min="0">
-          <input type="number" id="new-member-em" placeholder="Veces iniciales de EM" value="0" min="0">
-          <input type="number" id="new-member-bc1" placeholder="Veces iniciales de BC1" value="0" min="0">
-          <input type="number" id="new-member-bb1" placeholder="Veces iniciales de BB1" value="0" min="0">
-          <p style="font-size:0.8em; color:gray;">(Si se requieren de otros roles, se asignarán por defecto a 0). Faltas se cuenta en Carapiedra.</p>
+          <input type="text" id="new-member-name" placeholder="Nombre del bombero">
           <button class="btn" style="background:var(--accent);" onclick="app.addMember()">Añadir</button>
         </div>
 
