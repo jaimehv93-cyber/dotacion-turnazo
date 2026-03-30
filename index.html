@@ -168,6 +168,7 @@
         <div class="tabs-container">
           <button class="tab-btn active" id="btn-admin-tab-members" onclick="app.switchAdminTab('members')">Plantilla Turno</button>
           <button class="tab-btn" id="btn-admin-tab-users" onclick="app.switchAdminTab('users')">Cuentas y Usuarios</button>
+          <button class="tab-btn" id="btn-admin-tab-security" onclick="app.switchAdminTab('security')">Seguridad</button>
         </div>
 
         <div id="admin-tab-members" class="tab-content active">
@@ -183,6 +184,16 @@
         <div id="admin-tab-users" class="tab-content">
           <p style="color:var(--text-muted); font-size:0.85em; margin-bottom:1rem;">Gestiona aquí los usuarios que han creado una cuenta mediante contraseña.</p>
           <div class="admin-grid" id="admin-users-list"></div>
+        </div>
+
+        <div id="admin-tab-security" class="tab-content">
+          <h3 style="margin-top:1rem; font-size:1.1rem;">Cambiar Contraseña Maestra</h3>
+          <p style="color:var(--text-muted); font-size:0.85em; margin-bottom:1rem;">Esta es la clave exigida a quienes desean crearse una cuenta.</p>
+          <div style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1.5rem;">
+            <input type="password" id="admin-old-pass" placeholder="Contraseña actual">
+            <input type="password" id="admin-new-pass" placeholder="Nueva contraseña maestra">
+            <button class="btn" style="background:var(--accent);" onclick="app.changeMasterPassword()">Confirmar Cambio</button>
+          </div>
         </div>
 
         <button class="btn btn-secondary mt-4" onclick="document.getElementById('modal-admin').classList.add('hidden')">Cerrar</button>

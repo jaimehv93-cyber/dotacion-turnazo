@@ -20,6 +20,7 @@ let STATE = {
   chat: [],
   interventions: [],
   members: null,
+  masterPassword: 'JaimeMola',
   currentUser: null,
   isMaster: false,
   authMode: 'login',
@@ -43,6 +44,7 @@ const app = {
         STATE.chat = data.chat || [];
         STATE.interventions = data.interventions || [];
         STATE.members = data.members || null;
+        STATE.masterPassword = data.masterPassword || 'JaimeMola';
         
         if (!STATE.members) {
             STATE.members = [...DEFAULT_MEMBERS];
@@ -141,7 +143,7 @@ const app = {
 
     if (STATE.authMode === 'register') {
         const regPass = document.getElementById('auth-reg-pass').value.trim();
-        if (regPass !== 'JaimeMola') return errorMsg.innerText = "Contraseña maestra incorrecta.";
+        if (regPass !== STATE.masterPassword) return errorMsg.innerText = "Contraseña maestra incorrecta.";
         if (STATE.users.find(u => u.nick === nick)) return errorMsg.innerText = "Este nick ya existe.";
         
         let isMaster = STATE.users.length === 0;
@@ -389,6 +391,7 @@ const app = {
           history: STATE.history,
           chat: STATE.chat,
           interventions: STATE.interventions,
+          masterPassword: STATE.masterPassword,
           members: STATE.members
       }).catch(err => {
           console.error("Firebase sync error: ", err);
@@ -574,16 +577,13 @@ const app = {
   },
 
   switchAdminTab(tab) {
-      document.getElementById('btn-admin-tab-members').classList.remove('active');
-      document.getElementById('btn-admin-tab-users').classList.remove('active');
-      document.getElementById('admin-tab-members').classList.add('hidden');
-      document.getElementById('admin-tab-users').classList.add('hidden');
-      document.getElementById('admin-tab-members').classList.remove('active');
-      document.getElementById('admin-tab-users').classList.remove('active');
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
       
-      document.getElementById('btn-admin-tab-' + tab).classList.add('active');
-      document.getElementById('admin-tab-' + tab).classList.remove('hidden');
-      document.getElementById('admin-tab-' + tab).classList.add('active');
+      const btnObj = document.getElementById('btn-admin-tab-' + tab);
+      const tabObj = document.getElementById('admin-tab-' + tab);
+      if(btnObj) btnObj.classList.add('active');
+      if(tabObj) tabObj.classList.add('active');
   },
 
   renderAdminMembers() {
@@ -623,6 +623,20 @@ const app = {
       STATE.users = STATE.users.filter(u => u.nick !== nick);
       this.saveAll();
       this.renderAdminUsers();
+  },
+
+  changeMasterPassword() {
+      const oldPass = document.getElementById('admin-old-pass').value.trim();
+      const newPass = document.getElementById('admin-new-pass').value.trim();
+      
+      if(!oldPass || !newPass) return alert("Rellena ambos campos.");
+      if(oldPass !== STATE.masterPassword) return alert("La contraseña actual es incorrecta.");
+      
+      STATE.masterPassword = newPass;
+      this.saveAll();
+      document.getElementById('admin-old-pass').value = '';
+      document.getElementById('admin-new-pass').value = '';
+      alert("La contraseña maestra se ha cambiado correctamente.");
   },
 
   addMember() {
