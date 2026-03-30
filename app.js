@@ -72,6 +72,7 @@ const app = {
         }
         if(!document.getElementById('modal-admin').classList.contains('hidden')) {
             this.renderAdminMembers();
+            this.renderAdminUsers();
         }
 
         if(!STATE.connectedOnce) {
@@ -567,7 +568,22 @@ const app = {
   // ADMIN PANE
   showAdmin() {
       document.getElementById('modal-admin').classList.remove('hidden');
+      this.switchAdminTab('members');
       this.renderAdminMembers();
+      this.renderAdminUsers();
+  },
+
+  switchAdminTab(tab) {
+      document.getElementById('btn-admin-tab-members').classList.remove('active');
+      document.getElementById('btn-admin-tab-users').classList.remove('active');
+      document.getElementById('admin-tab-members').classList.add('hidden');
+      document.getElementById('admin-tab-users').classList.add('hidden');
+      document.getElementById('admin-tab-members').classList.remove('active');
+      document.getElementById('admin-tab-users').classList.remove('active');
+      
+      document.getElementById('btn-admin-tab-' + tab).classList.add('active');
+      document.getElementById('admin-tab-' + tab).classList.remove('hidden');
+      document.getElementById('admin-tab-' + tab).classList.add('active');
   },
 
   renderAdminMembers() {
@@ -583,6 +599,30 @@ const app = {
              </div>
           `;
       });
+  },
+
+  renderAdminUsers() {
+      const container = document.getElementById('admin-users-list');
+      container.innerHTML = '';
+      STATE.users.forEach(u => {
+          let role = u.isMaster ? '⭐ Master' : 'Bombero';
+          let delBtn = u.isMaster ? '' : `<button class="btn-sm" style="background:var(--primary);color:white;border:none;" onclick="app.deleteUser('${u.nick}')">Borrar Cuenta</button>`;
+          container.innerHTML += `
+             <div class="admin-row" style="padding:0.5rem; background:rgba(0,0,0,0.2); border-radius:8px;">
+                 <div style="flex:1;">
+                    <strong>${u.nick}</strong> <span style="font-size:0.8em; color:var(--text-muted);">(${role})</span>
+                 </div>
+                 ${delBtn}
+             </div>
+          `;
+      });
+  },
+
+  deleteUser(nick) {
+      if(!confirm(`¿Seguro que quieres eliminar la cuenta de ${nick}? Ya no podrá iniciar sesión.`)) return;
+      STATE.users = STATE.users.filter(u => u.nick !== nick);
+      this.saveAll();
+      this.renderAdminUsers();
   },
 
   addMember() {

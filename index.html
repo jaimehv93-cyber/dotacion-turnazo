@@ -52,6 +52,7 @@
     <!-- Barra Superior -->
     <nav class="top-nav hidden" id="top-nav">
       <div class="nav-buttons-left">
+          <button class="btn-sm btn-secondary" style="border-color:var(--accent); color:var(--accent);" onclick="app.showView('selection')">🏠 Inicio</button>
           <button class="btn-sm btn-secondary" onclick="app.showEmisoraList()">🎙️ Emisora</button>
           <button class="btn-sm btn-secondary btn-master hidden" onclick="app.showAdmin()">⚙️ Admin</button>
           <button class="btn-sm btn-secondary" onclick="app.showChat()">💬 Chat</button>
@@ -164,15 +165,27 @@
       <div class="modal-content glass-card">
         <h2>🛠️ Panel Master</h2>
         
-        <div class="admin-grid" id="admin-members-list"></div>
-        
-        <h3 style="margin-top:2rem; font-size:1.1rem;">Añadir Integrante</h3>
-        <div style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1.5rem;">
-          <input type="text" id="new-member-name" placeholder="Nombre del bombero">
-          <button class="btn" style="background:var(--accent);" onclick="app.addMember()">Añadir</button>
+        <div class="tabs-container">
+          <button class="tab-btn active" id="btn-admin-tab-members" onclick="app.switchAdminTab('members')">Plantilla Turno</button>
+          <button class="tab-btn" id="btn-admin-tab-users" onclick="app.switchAdminTab('users')">Cuentas y Usuarios</button>
         </div>
 
-        <button class="btn btn-secondary" onclick="document.getElementById('modal-admin').classList.add('hidden')">Cerrar</button>
+        <div id="admin-tab-members" class="tab-content active">
+          <div class="admin-grid" id="admin-members-list"></div>
+          
+          <h3 style="margin-top:2rem; font-size:1.1rem;">Añadir Nuevo Bombero</h3>
+          <div style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1.5rem;">
+            <input type="text" id="new-member-name" placeholder="Nombre completo o alias">
+            <button class="btn" style="background:var(--accent);" onclick="app.addMember()">Añadir a Plantilla</button>
+          </div>
+        </div>
+
+        <div id="admin-tab-users" class="tab-content">
+          <p style="color:var(--text-muted); font-size:0.85em; margin-bottom:1rem;">Gestiona aquí los usuarios que han creado una cuenta mediante contraseña.</p>
+          <div class="admin-grid" id="admin-users-list"></div>
+        </div>
+
+        <button class="btn btn-secondary mt-4" onclick="document.getElementById('modal-admin').classList.add('hidden')">Cerrar</button>
       </div>
     </div>
 
