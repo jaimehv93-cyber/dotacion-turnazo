@@ -747,6 +747,7 @@ const app = {
   // ------------- CHAT GENERAL -------------
   showChat() {
       this.showView('chat');
+      this.renderChat();
   },
   
   renderChat() {
