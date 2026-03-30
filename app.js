@@ -399,11 +399,12 @@ const app = {
   },
 
   // HISTORY & STATS VIEWS
-  switchHistoryTab(tab) {
-      document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-      event.target.classList.add('active');
-      document.getElementById('tab-' + tab).classList.add('active');
+  switchHistoryTab(tab, event) {
+      document.querySelectorAll('#view-history .tab-btn').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('#view-history .tab-content').forEach(t => t.classList.remove('active'));
+      if(event && event.target) event.target.classList.add('active');
+      const tabObj = document.getElementById('tab-' + tab);
+      if(tabObj) tabObj.classList.add('active');
   },
 
   showHistory() { this.showView('history'); },
@@ -577,8 +578,8 @@ const app = {
   },
 
   switchAdminTab(tab) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      document.querySelectorAll('#modal-admin .tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('#modal-admin .tab-content').forEach(tc => tc.classList.remove('active'));
       
       const btnObj = document.getElementById('btn-admin-tab-' + tab);
       const tabObj = document.getElementById('admin-tab-' + tab);
