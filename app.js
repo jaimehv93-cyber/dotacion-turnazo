@@ -608,9 +608,10 @@ const app = {
           let role = u.isMaster ? '⭐ Master' : 'Bombero';
           let delBtn = u.isMaster ? '' : `<button class="btn-sm" style="background:var(--primary);color:white;border:none;" onclick="app.deleteUser('${u.nick}')">Borrar Cuenta</button>`;
           container.innerHTML += `
-             <div class="admin-row" style="padding:0.5rem; background:rgba(0,0,0,0.2); border-radius:8px;">
+             <div class="admin-row" style="padding:0.5rem; background:rgba(0,0,0,0.2); border-radius:8px; align-items:flex-start;">
                  <div style="flex:1;">
-                    <strong>${u.nick}</strong> <span style="font-size:0.8em; color:var(--text-muted);">(${role})</span>
+                    <div><strong>${u.nick}</strong> <span style="font-size:0.8em; color:var(--accent);">(${role})</span></div>
+                    <div style="font-size:0.85em; color:var(--text-muted); margin-top:0.3rem;">🔑 Clave: <span style="color:white; letter-spacing:1px;">${u.pass}</span></div>
                  </div>
                  ${delBtn}
              </div>
