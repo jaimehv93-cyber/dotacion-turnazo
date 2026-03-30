@@ -54,6 +54,8 @@
       <div class="nav-buttons-left">
           <button class="btn-sm btn-secondary" onclick="app.showEmisoraList()">🎙️ Emisora</button>
           <button class="btn-sm btn-secondary btn-master hidden" onclick="app.showAdmin()">⚙️ Admin</button>
+          <button class="btn-sm btn-secondary" onclick="app.showChat()">💬 Chat</button>
+          <button class="btn-sm btn-secondary" onclick="app.showInterventions()">🚒 Intervenciones</button>
       </div>
       <div class="nav-buttons-right">
           <button class="btn-sm btn-secondary" onclick="app.showHistory()">📚 Histórico & Stats</button>
@@ -62,6 +64,42 @@
           </button>
       </div>
     </nav>
+
+    <!-- Chat General -->
+    <section id="view-chat" class="glass-card hidden">
+      <h2><i data-lucide="message-circle" style="vertical-align: middle;"></i> Chat General</h2>
+      <div id="chat-messages" style="height:350px; overflow-y:auto; margin-bottom:1rem; padding-right:0.5rem; display:flex; flex-direction:column; gap:0.5rem;">
+      </div>
+      <div style="display:flex; gap:0.5rem;">
+        <input type="text" id="chat-input" placeholder="Escribe un mensaje..." style="flex:1;" onkeypress="if(event.key==='Enter') app.sendChatMessage()">
+        <button class="btn btn-sm" style="background:var(--accent);" onclick="app.sendChatMessage()">Enviar</button>
+      </div>
+    </section>
+
+    <!-- Diario de Intervenciones -->
+    <section id="view-interventions" class="glass-card hidden">
+      <h2><i data-lucide="flame" style="vertical-align: middle;"></i> Diario de Intervenciones</h2>
+      <div style="display:flex; gap:1rem; margin-bottom:1.5rem;">
+        <div style="flex:1;">
+          <label>Fecha del Parte</label>
+          <select id="intervention-date" style="width:100%; padding:0.75rem; background:rgba(0,0,0,0.2); color:var(--text-main); border:1px solid var(--surface-border); border-radius:8px;">
+          </select>
+        </div>
+      </div>
+      <button class="btn mt-4" style="background:var(--accent); margin-bottom:1rem;" onclick="app.openAddInterventionModal()">
+        <i data-lucide="plus-circle"></i> Añadir Intervención
+      </button>
+      <button class="btn btn-secondary" onclick="app.showInterventionsRegistry()">
+        <i data-lucide="archive"></i> Ver Registro Completo
+      </button>
+    </section>
+
+    <!-- Listado Histórico de Intervenciones -->
+    <section id="view-interventions-registry" class="glass-card hidden">
+      <h2><i data-lucide="list" style="vertical-align: middle;"></i> Histórico de Intervenciones</h2>
+      <div id="interventions-list"></div>
+      <button class="btn btn-secondary mt-4" onclick="app.showInterventions()">Atrás</button>
+    </section>
 
     <!-- Selección de Personal -->
     <section id="view-selection" class="glass-card hidden">
@@ -105,6 +143,7 @@
       </div>
 
       <div id="tab-hist" class="tab-content active">
+        <button class="btn btn-secondary btn-master hidden" style="margin-bottom:1rem; border-color:var(--accent); color:var(--accent);" onclick="app.openAddHistoryModal()">+ Añadir Registro Manual</button>
         <div id="history-list"></div>
       </div>
       <div id="tab-stats" class="tab-content">
@@ -161,6 +200,43 @@
         <div style="display:flex; gap:1rem;">
             <button class="btn" style="background:var(--accent);" onclick="app.saveEditedStats()">Guardar</button>
             <button class="btn btn-secondary" onclick="document.getElementById('modal-edit-stats').classList.add('hidden')">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Editar / Añadir Histórico -->
+    <div id="modal-edit-history" class="modal-overlay hidden">
+      <div class="modal-content glass-card">
+        <h2 id="modal-history-title">Editar Histórico</h2>
+        <input type="hidden" id="edit-history-id">
+        <div class="form-group">
+           <label>Fecha (Ej: 30/3/2026, 12:00:00)</label>
+           <input type="text" id="edit-history-date" placeholder="DD/MM/YYYY, HH:MM:SS">
+        </div>
+        <div id="edit-history-positions" class="positions-list"></div>
+        <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+            <button class="btn" style="background:var(--accent);" onclick="app.saveHistoryRecord()">Guardar</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('modal-edit-history').classList.add('hidden')">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Intervención -->
+    <div id="modal-intervention" class="modal-overlay hidden">
+      <div class="modal-content glass-card">
+        <h2 id="modal-intervention-title">Añadir Intervención</h2>
+        <input type="hidden" id="interv-id">
+        <div class="form-group">
+          <label>Tipo de Intervención</label>
+          <input type="text" id="interv-type" placeholder="Ej: Fuego en vivienda, Rescate...">
+        </div>
+        <div class="form-group">
+          <label>Desarrollo / Resumen</label>
+          <textarea id="interv-desc" rows="4"></textarea>
+        </div>
+        <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+            <button class="btn" style="background:var(--accent);" onclick="app.saveIntervention()">Guardar</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('modal-intervention').classList.add('hidden')">Cancelar</button>
         </div>
       </div>
     </div>

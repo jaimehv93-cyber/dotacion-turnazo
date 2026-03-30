@@ -16,9 +16,9 @@ const DEFAULT_MEMBERS = ['Jaime', 'Balduque', 'Oscar', 'Edu', 'Javi', 'Victor', 
 const GENERICS = ['BB', 'BC', 'EM'];
 
 let STATE = {
-  users: [],
-  stats: {},
   history: [],
+  chat: [],
+  interventions: [],
   members: null,
   currentUser: null,
   isMaster: false,
@@ -40,6 +40,8 @@ const app = {
         STATE.users = data.users || [];
         STATE.stats = data.stats || {};
         STATE.history = data.history || [];
+        STATE.chat = data.chat || [];
+        STATE.interventions = data.interventions || [];
         STATE.members = data.members || null;
         
         if (!STATE.members) {
@@ -61,6 +63,12 @@ const app = {
         }
         if(!document.getElementById('modal-emisora').classList.contains('hidden')) {
             this.showEmisoraList();
+        }
+        if(!document.getElementById('view-chat').classList.contains('hidden')) {
+            this.renderChat();
+        }
+        if(!document.getElementById('view-interventions-registry').classList.contains('hidden')) {
+            this.renderInterventionsList();
         }
         if(!document.getElementById('modal-admin').classList.contains('hidden')) {
             this.renderAdminMembers();
@@ -245,7 +253,10 @@ const app = {
 
       // 2. BC1
       let candBC1 = availableNames.filter(n => n !== 'Balduque');
-      if (candBC1.length > 0) {
+      if (STATE.presentMembers.length === 3) {
+          // REGLA: Si hay exactamente 3 integrantes nombrados presentes, forzamos un genérico BC a BC1.
+          setRole('BC1', 'BC');
+      } else if (candBC1.length > 0) {
           candBC1.sort((a,b) => this.getStat(a, 'BC1') - this.getStat(b, 'BC1'));
           setRole('BC1', candBC1[0]);
       } else if (availableGenerics.BC > 0) {
@@ -375,6 +386,8 @@ const app = {
           users: STATE.users,
           stats: STATE.stats,
           history: STATE.history,
+          chat: STATE.chat,
+          interventions: STATE.interventions,
           members: STATE.members
       }).catch(err => {
           console.error("Firebase sync error: ", err);
@@ -414,11 +427,14 @@ const app = {
               }
           });
 
-          // Solo master puede eliminar día de guardia por ahora
-          let delBtn = STATE.isMaster ? `<button class="btn-delete" onclick="app.deleteHistoryRecord('${record.id}')">Borrar</button>` : '';
+          // Solo master puede editar/eliminar día de guardia por ahora
+          let masterBtns = STATE.isMaster ? `
+            <button class="btn-delete" style="right:4.5rem; background:var(--accent);" onclick="app.editHistoryRecordObj('${record.id}')">Editar</button>
+            <button class="btn-delete" onclick="app.deleteHistoryRecord('${record.id}')">Borrar</button>
+          ` : '';
 
           div.innerHTML = `
-             ${delBtn}
+             ${masterBtns}
              <div class="history-date">${record.date}</div>
              <div class="history-positions">${posHtml}</div>
           `;
@@ -670,6 +686,312 @@ const app = {
       document.getElementById('modal-emisora').classList.add('hidden'); // Ocultar por si acaso
       
       alert("Estadísticas actualizadas correctamente.");
+  },
+
+  // ------------- CHAT GENERAL -------------
+  showChat() {
+      this.showView('chat');
+  },
+  
+  renderChat() {
+      const container = document.getElementById('chat-messages');
+      container.innerHTML = '';
+      if(STATE.chat.length === 0) {
+          container.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:2rem;">No hay mensajes. ¡Sé el primero en saludar!</p>';
+          return;
+      }
+      
+      STATE.chat.forEach(msg => {
+          const isMine = msg.user === STATE.currentUser;
+          const bgClass = isMine ? 'mine' : '';
+          
+          let delBtn = (STATE.isMaster || isMine) ? `<button class="chat-del" onclick="app.deleteChatMessage('${msg.id}')">Borrar</button>` : '';
+          
+          container.innerHTML += `
+             <div class="chat-msg ${bgClass}">
+                <div class="chat-header">
+                   <span><strong>${msg.user}</strong></span>
+                   <span>${msg.time} ${delBtn}</span>
+                </div>
+                <div class="chat-body">${msg.text}</div>
+             </div>
+          `;
+      });
+      container.scrollTop = container.scrollHeight;
+  },
+  
+  sendChatMessage() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if(!text) return;
+      
+      const now = new Date();
+      const timeStr = now.toLocaleDateString('es-ES') + ' ' + now.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
+      
+      const msg = {
+          id: Date.now().toString(),
+          user: STATE.currentUser,
+          text: text,
+          time: timeStr
+      };
+      
+      STATE.chat.push(msg);
+      this.saveAll();
+      input.value = '';
+      this.renderChat();
+  },
+  
+  deleteChatMessage(id) {
+      if(!confirm("¿Borrar mensaje?")) return;
+      STATE.chat = STATE.chat.filter(m => m.id !== id);
+      this.saveAll();
+      this.renderChat();
+  },
+
+  // ------------- INTERVENCIONES -------------
+  showInterventions() {
+      this.showView('interventions');
+      const select = document.getElementById('intervention-date');
+      select.innerHTML = '';
+      
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const optToday = document.createElement('option');
+      optToday.value = today.toLocaleDateString('es-ES');
+      optToday.text = optToday.value + " (Hoy)";
+      
+      const optYest = document.createElement('option');
+      optYest.value = yesterday.toLocaleDateString('es-ES');
+      optYest.text = optYest.value + " (Ayer)";
+      
+      select.appendChild(optToday);
+      select.appendChild(optYest);
+  },
+
+  openAddInterventionModal() {
+      document.getElementById('interv-id').value = '';
+      document.getElementById('interv-type').value = '';
+      document.getElementById('interv-desc').value = '';
+      document.getElementById('modal-intervention').classList.remove('hidden');
+  },
+
+  saveIntervention() {
+      const type = document.getElementById('interv-type').value.trim();
+      const desc = document.getElementById('interv-desc').value.trim();
+      const date = document.getElementById('intervention-date').value;
+      const id = document.getElementById('interv-id').value;
+
+      if(!type || !desc) return alert("Rellena todos los campos.");
+
+      if(id) {
+          let rec = STATE.interventions.find(i => i.id === id);
+          if(rec) {
+              rec.type = type;
+              rec.desc = desc;
+          }
+      } else {
+          STATE.interventions.unshift({
+              id: Date.now().toString(),
+              date: date,
+              type: type,
+              desc: desc,
+              author: STATE.currentUser
+          });
+      }
+      this.saveAll();
+      document.getElementById('modal-intervention').classList.add('hidden');
+      alert("Intervención guardada.");
+      if(!document.getElementById('view-interventions-registry').classList.contains('hidden')) {
+          this.renderInterventionsList();
+      }
+  },
+
+  showInterventionsRegistry() {
+      this.showView('interventions-registry');
+      this.renderInterventionsList();
+  },
+
+  renderInterventionsList() {
+      const container = document.getElementById('interventions-list');
+      container.innerHTML = '';
+      if(STATE.interventions.length === 0) {
+          container.innerHTML = '<p style="color:var(--text-muted);">No hay intervenciones registradas.</p>';
+          return;
+      }
+      
+      STATE.interventions.forEach(inv => {
+          let ops = STATE.isMaster ? `
+            <button class="btn-edit" onclick="app.editIntervention('${inv.id}')">Editar</button>
+            <button class="btn-delete" onclick="app.deleteIntervention('${inv.id}')">Borrar</button>
+          ` : '';
+
+          container.innerHTML += `
+             <div class="interv-item">
+                ${ops}
+                <div class="interv-date">📅 ${inv.date} - Por ${inv.author}</div>
+                <div class="interv-type">${inv.type}</div>
+                <div class="interv-desc">${inv.desc}</div>
+             </div>
+          `;
+      });
+  },
+
+  editIntervention(id) {
+      const inv = STATE.interventions.find(i => i.id === id);
+      if(!inv) return;
+      document.getElementById('interv-id').value = inv.id;
+      document.getElementById('interv-type').value = inv.type;
+      document.getElementById('interv-desc').value = inv.desc;
+      // Añadimos la fecha de esa interv al seleccionador forzosamente por si es vieja
+      const select = document.getElementById('intervention-date');
+      let exists = Array.from(select.options).some(o => o.value === inv.date);
+      if(!exists) {
+         let opt = document.createElement('option');
+         opt.value = inv.date;
+         opt.text = inv.date;
+         select.appendChild(opt);
+      }
+      select.value = inv.date;
+      document.getElementById('modal-intervention').classList.remove('hidden');
+  },
+
+  deleteIntervention(id) {
+      if(!confirm("¿Borrar esta intervención?")) return;
+      STATE.interventions = STATE.interventions.filter(i => i.id !== id);
+      this.saveAll();
+      this.renderInterventionsList();
+  },
+
+  // ------------- HISTORIAL MANUAL Y EDICIÓN -------------
+  
+  openAddHistoryModal() {
+      document.getElementById('edit-history-id').value = '';
+      let now = new Date();
+      document.getElementById('edit-history-date').value = now.toLocaleDateString('es-ES') + ', ' + now.toLocaleTimeString('es-ES');
+      this.renderHistoryEditPositions();
+      document.getElementById('modal-edit-history').classList.remove('hidden');
+  },
+
+  editHistoryRecordObj(id) {
+      let rec = STATE.history.find(h => h.id === id);
+      if(!rec) return;
+      document.getElementById('edit-history-id').value = rec.id;
+      document.getElementById('edit-history-date').value = rec.date;
+      this.renderHistoryEditPositions(rec.roles, rec.positions);
+      document.getElementById('modal-edit-history').classList.remove('hidden');
+  },
+
+  renderHistoryEditPositions(customRoles = null, currentPositions = {}) {
+      const container = document.getElementById('edit-history-positions');
+      container.innerHTML = '';
+      
+      // Roles estándar si es manual o si no vienen roles
+      let roles = customRoles || ['EM', 'BC1', 'BC2', 'BC3', 'BB1', 'BB2', 'BB3', 'BB4', 'BB5', 'BB6', 'BB7', 'BB8'];
+      const allOptions = [...STATE.members, ...GENERICS, 'VACÍO'];
+
+      roles.forEach(role => {
+          const currentPerson = currentPositions[role] || 'VACÍO';
+          let selectHtml = `<select class="position-select edit-pos-sel" data-role="${role}">`;
+          allOptions.forEach(opt => {
+              const selected = opt === currentPerson ? 'selected' : '';
+              selectHtml += `<option value="${opt}" ${selected}>${opt}</option>`;
+          });
+          selectHtml += `</select>`;
+
+          container.innerHTML += `
+              <div class="position-item">
+                  <span class="position-label">${role}</span>
+                  ${selectHtml}
+              </div>
+          `;
+      });
+  },
+
+  saveHistoryRecord() {
+      const id = document.getElementById('edit-history-id').value;
+      const dateStr = document.getElementById('edit-history-date').value.trim();
+      if(!dateStr) return alert("Pon una fecha.");
+
+      // Recoger nuevas posiciones
+      let newPositions = {};
+      let rolesUsed = [];
+      document.querySelectorAll('.edit-pos-sel').forEach(sel => {
+          let rol = sel.getAttribute('data-role');
+          newPositions[rol] = sel.value;
+          rolesUsed.push(rol);
+      });
+
+      let oldPositions = {};
+      let oldPeople = [];
+      let rec = null;
+
+      if(id) {
+          rec = STATE.history.find(h => h.id === id);
+          if(rec) {
+              oldPositions = rec.positions;
+              oldPeople = Object.values(oldPositions);
+              
+              // 1. Restar stats antiguos
+              rec.roles.forEach(role => {
+                  let p = rec.positions[role];
+                  if(STATE.members.includes(p) && STATE.stats[p] && STATE.stats[p][role] > 0) {
+                      STATE.stats[p][role]--;
+                  }
+              });
+              // 2. Deshacer Carapiedra para los que no estaban
+              STATE.members.forEach(m => {
+                  if(!oldPeople.includes(m) && STATE.stats[m] && STATE.stats[m].absences > 0) {
+                      STATE.stats[m].absences--;
+                  }
+              });
+          }
+      }
+
+      // 3. Sumar stats nuevos
+      const newPeople = Object.values(newPositions);
+      rolesUsed.forEach(role => {
+          let p = newPositions[role];
+          if(STATE.members.includes(p)) {
+              if(!STATE.stats[p]) STATE.stats[p] = {absences:0};
+              if(!STATE.stats[p][role]) STATE.stats[p][role] = 0;
+              STATE.stats[p][role]++;
+          }
+      });
+
+      // 4. Sumar Carapiedra de la nueva configuración
+      STATE.members.forEach(m => {
+          if(!newPeople.includes(m)) {
+              if(!STATE.stats[m]) STATE.stats[m] = {absences:0};
+              STATE.stats[m].absences++;
+          }
+      });
+
+      // Guardar el registro
+      if(rec) {
+          rec.date = dateStr;
+          rec.positions = newPositions;
+          rec.roles = rolesUsed;
+      } else {
+          STATE.history.unshift({
+              id: Date.now().toString(),
+              date: dateStr,
+              positions: newPositions,
+              roles: rolesUsed
+          });
+          // Sort chronology optionally? Unshift assumes adding newest, or user can put old dates, we leave it at top
+      }
+
+      this.saveAll();
+      document.getElementById('modal-edit-history').classList.add('hidden');
+      alert("Registro guardado con éxito.");
+      
+      if(!document.getElementById('view-history').classList.contains('hidden')) {
+          this.renderHistory();
+          this.renderStats();
+          this.renderCarapiedra();
+      }
   }
 };
 
