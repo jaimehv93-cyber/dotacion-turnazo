@@ -73,32 +73,9 @@ input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px
 .auth-tab.active { background: var(--surface); color: var(--text-main); }
 #error-msg { color: var(--primary); font-size: 0.9rem; margin-top: 1rem; text-align: center; }
 
-.top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; position: relative; }
-.nav-left, .nav-right { display: flex; align-items: center; gap: 0.75rem; }
+.top-nav { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; padding-bottom: 1rem; }
+.nav-buttons-left, .nav-buttons-right { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
 
-/* Navigation Menu Reversion */
-.menu-wrapper { position: relative; }
-.menu-dropdown {
-  position: absolute; top: calc(100% + 10px); left: 0;
-  background: var(--surface); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-  border: 1px solid var(--surface-border); border-radius: 12px;
-  min-width: 200px; padding: 0.75rem; z-index: 100;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
-  display: flex; flex-direction: column; gap: 8px;
-  opacity: 0; visibility: hidden; transform: translateY(-5px);
-  transition: all 0.25s ease-out;
-}
-.menu-dropdown.show { opacity: 1; visibility: visible; transform: translateY(0); }
-.menu-item {
-  width: 100%; text-align: left; padding: 0.6rem 1rem;
-  background: transparent; border: 1px solid var(--surface-border); color: var(--text-main);
-  border-radius: 8px; cursor: pointer; transition: all 0.2s;
-  display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem; font-weight: 500;
-}
-.menu-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--accent); border-color: var(--accent); }
-.menu-item i { width: 16px; height: 16px; min-width: 16px; }
-.menu-item.btn-master { border-color: var(--accent); color: var(--accent); }
-.menu-item.btn-master:hover { background: rgba(249, 115, 22, 0.1); }
 
 
 

@@ -61,36 +61,17 @@
 
     <!-- Barra Superior -->
     <nav class="top-nav hidden" id="top-nav">
-      <div class="nav-left">
-        <div class="menu-wrapper">
-          <button class="btn btn-sm btn-secondary" onclick="app.toggleMenu()" id="menu-trigger" style="border-color:var(--accent); color:var(--accent);">
-            <i data-lucide="menu"></i> Menú
-          </button>
-          <div class="menu-dropdown" id="main-menu">
-            <button class="menu-item" onclick="app.showView('selection')">
-              <i data-lucide="home"></i> Inicio
-            </button>
-            <button class="menu-item" onclick="app.showHistory()">
-              <i data-lucide="bar-chart-2"></i> Histórico
-            </button>
-            <button class="menu-item" onclick="app.showEmisoraList()">
-              <i data-lucide="mic"></i> Emisora
-            </button>
-            <button class="menu-item" onclick="app.showInterventions()">
-              <i data-lucide="flame"></i> Intervenciones
-            </button>
-            <button class="menu-item" onclick="app.showChat()">
-              <i data-lucide="message-circle"></i> Chat
-            </button>
-            <button class="menu-item btn-master hidden" onclick="app.showAdmin()">
-              <i data-lucide="settings"></i> Admin (Master)
-            </button>
-          </div>
-        </div>
+      <div class="nav-buttons-left">
+          <button class="btn-sm btn-secondary" style="border-color:var(--accent); color:var(--accent);" onclick="app.showView('selection')">🏠 Inicio</button>
+          <button class="btn-sm btn-secondary" onclick="app.showHistory()">📚 Histórico</button>
+          <button class="btn-sm btn-secondary" onclick="app.showEmisoraList()">🎙️ Emisora</button>
+          <button class="btn-sm btn-secondary" onclick="app.showInterventions()">🚒 Intervenciones</button>
+          <button class="btn-sm btn-secondary" onclick="app.showChat()">💬 Chat</button>
+          <button class="btn-sm btn-secondary btn-master hidden" onclick="app.showAdmin()">⚙️ Admin (Master)</button>
       </div>
-      <div class="nav-right">
-          <button class="btn-sm btn-secondary" style="color:var(--primary); border:none; background:rgba(239, 68, 68, 0.1);" onclick="app.logout()">
-            <i data-lucide="log-out" style="width:18px;height:18px;"></i>
+      <div class="nav-buttons-right">
+          <button class="btn-sm btn-secondary" style="color:var(--primary);" onclick="app.logout()">
+            <i data-lucide="log-out" style="width:16px;height:16px;"></i> Salir
           </button>
       </div>
     </nav>
