@@ -114,18 +114,16 @@
 
     <!-- Selección de Personal -->
     <section id="view-selection" class="glass-card hidden">
-      <h2><i data-lucide="users" style="vertical-align: middle;"></i> Personal de Guardia</h2>
+      <h3 style="margin-bottom:1rem; font-size:1.1rem; color:var(--accent);"><i data-lucide="shield-check" style="vertical-align: middle;"></i> Jefes de Turno</h3>
+      <div class="members-grid" id="jefes-container" style="margin-bottom: 2rem;"></div>
+
+      <h2 style="font-size:1.5rem; margin-bottom:1rem;"><i data-lucide="users" style="vertical-align: middle;"></i> Personal de Guardia</h2>
       <p style="color:var(--text-muted); margin-bottom:1rem; font-size:0.9rem;">
         Selecciona los integrantes presentes hoy en el turno.
       </p>
-      
       <div class="members-grid" id="members-container"></div>
 
-
-      <h3 style="margin-top:2rem; margin-bottom:1rem; font-size:1.1rem;">Jefes</h3>
-      <div class="members-grid" id="jefes-container"></div>
-
-      <h3 style="margin-top:2rem; margin-bottom:1rem; font-size:1.1rem;">Personal Genérico</h3>
+      <h3 style="margin-top:2rem; margin-bottom:1rem; font-size:1.1rem;"><i data-lucide="user-plus" style="vertical-align: middle;"></i> Personal Genérico</h3>
       <div class="counters-grid" id="counters-container"></div>
 
       <button class="btn mt-4" onclick="app.generateTurn()">
