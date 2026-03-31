@@ -12,7 +12,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-const DEFAULT_MEMBERS = ['Jaime', 'Balduque', 'Oscar', 'Edu', 'Javi', 'Victor', 'Marcos', 'Luis', 'Pablo'];
+const DEFAULT_MEMBERS = ['Jaime', 'Balduque', 'Oscar', 'Edu', 'Javi', 'Victor', 'Marcos', 'Luis', 'Pablo', 'Cupe', 'Pele'];
 const GENERICS = ['BB', 'BC', 'EM'];
 
 let STATE = {
@@ -25,11 +25,13 @@ let STATE = {
   isMaster: false,
   authMode: 'login',
   presentMembers: [],
+  presentJefes: [],
   genericsCount: { BB:0, BC:0, EM:0 },
   currentTurn: {},   
   rolesGenerated: [],
   connectedOnce: false
 };
+
 
 
 const app = {
@@ -57,6 +59,7 @@ const app = {
         document.getElementById('loading-overlay').classList.add('hidden');
         
         this.renderMembers();
+        this.renderJefes();
         this.renderCounters();
         if(!document.getElementById('view-history').classList.contains('hidden')) {
             this.renderHistory();
@@ -240,7 +243,8 @@ const app = {
     container.innerHTML = '';
     STATE.presentMembers = STATE.presentMembers.filter(m => STATE.members.includes(m)); // Limpiar borrados
     
-    STATE.members.forEach(m => {
+    const regularMembers = STATE.members.filter(m => m !== 'Cupe' && m !== 'Pele');
+    regularMembers.forEach(m => {
         const div = document.createElement('div');
         div.className = `member-toggle ${STATE.presentMembers.includes(m) ? 'active' : ''}`;
         div.innerText = m;
@@ -255,6 +259,27 @@ const app = {
         container.appendChild(div);
     });
   },
+
+  renderJefes() {
+    const container = document.getElementById('jefes-container');
+    container.innerHTML = '';
+    const jefes = STATE.members.filter(m => m === 'Cupe' || m === 'Pele');
+    jefes.forEach(m => {
+        const div = document.createElement('div');
+        div.className = `member-toggle ${STATE.presentJefes.includes(m) ? 'active' : ''}`;
+        div.innerText = m;
+        div.onclick = () => {
+            if (STATE.presentJefes.includes(m)) {
+                STATE.presentJefes = STATE.presentJefes.filter(x => x !== m);
+            } else {
+                STATE.presentJefes.push(m);
+            }
+            this.renderJefes();
+        };
+        container.appendChild(div);
+    });
+  },
+
 
   renderCounters() {
       const container = document.getElementById('counters-container');
@@ -286,7 +311,8 @@ const app = {
   },
 
   generateTurn() {
-      let availableNames = [...STATE.presentMembers];
+      // Filtrar Cupe y Pele de la generación automática
+      let availableNames = [...STATE.presentMembers].filter(m => m !== 'Cupe' && m !== 'Pele');
       let availableGenerics = { ...STATE.genericsCount };
       let assignment = {};
       
@@ -417,13 +443,18 @@ const app = {
   confirmTurn() {
       const date = new Date().toLocaleString('es-ES');
       const record = { id: Date.now().toString(), date, positions: { ...STATE.currentTurn }, roles: [...STATE.rolesGenerated] };
+      
+      // Auto-añadir Jefes a las posiciones si están presentes
+      if (STATE.presentJefes.includes('Cupe')) record.positions['JE'] = 'Cupe';
+      if (STATE.presentJefes.includes('Pele')) record.positions['JD'] = 'Pele';
+
       STATE.history.unshift(record); 
       
-      const assignedPeople = Object.values(STATE.currentTurn);
+      const assignedPeople = Object.values(record.positions);
 
       // Actualizar stats operativos
-      for (const role of STATE.rolesGenerated) {
-          const person = STATE.currentTurn[role];
+      for (const role in record.positions) {
+          const person = record.positions[role];
           if (STATE.members.includes(person)) {
               if (!STATE.stats[person]) STATE.stats[person] = { absences: 0 };
               if (!STATE.stats[person][role]) STATE.stats[person][role] = 0;
@@ -431,9 +462,11 @@ const app = {
           }
       }
 
-      // Sumar faltas Carapiedra (a los miembros de STATE.members que NO están en la dotación)
+      // Sumar faltas Carapiedra (a los miembros de STATE.members que NO asistieron)
+      // Cupe y Pele solo no sumarán falta si están en presentJefes
       STATE.members.forEach(m => {
-          if (!assignedPeople.includes(m)) {
+          let wasPresent = assignedPeople.includes(m);
+          if (!wasPresent) {
               if (!STATE.stats[m]) STATE.stats[m] = { absences: 0 };
               if (STATE.stats[m].absences === undefined) STATE.stats[m].absences = 0;
               STATE.stats[m].absences++;
@@ -486,6 +519,14 @@ const app = {
           div.className = 'history-item';
           
           let posHtml = '';
+          
+          // Mostrar JE y JD primero si existen
+          ['JE', 'JD'].forEach(role => {
+              if(record.positions[role]) {
+                  posHtml += `<div><strong>${role}:</strong> ${record.positions[role]}</div>`;
+              }
+          });
+
           record.roles.forEach(role => {
               if(record.positions[role] && record.positions[role] !== 'VACÍO') {
                  posHtml += `<div><strong>${role}:</strong> ${record.positions[role]}</div>`;
