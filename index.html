@@ -27,6 +27,7 @@
         <div class="auth-tab" id="tab-register" onclick="app.switchAuth('register')">Registro</div>
       </div>
       
+      
       <div class="form-group">
         <label>Nick</label>
         <input type="text" id="auth-nick" placeholder="Tu nombre o alias" autocomplete="off">
@@ -35,10 +36,18 @@
         <label>Contraseña</label>
         <input type="password" id="auth-pass" placeholder="Tu contraseña">
       </div>
+      
+      <div class="form-group" id="group-remember" style="display:flex; justify-content:center; margin-top:10px; margin-bottom:10px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px;">
+        <label class="checkbox-container" style="display:flex; align-items:center; gap:10px; cursor:pointer; color:var(--text-muted); font-size:0.9rem; user-select:none;">
+          <input type="checkbox" id="auth-remember" style="width:18px; height:18px; cursor:pointer;">
+          Recordar sesión en este equipo
+        </label>
+      </div>
       <div class="form-group hidden" id="group-reg-pass">
         <label>Contraseña Maestra (Obligatorio para registro)</label>
         <input type="password" id="auth-reg-pass" placeholder="•••••••••">
       </div>
+      
       <p id="first-user-warning" style="color:var(--accent); font-size:0.85em; margin-bottom:1rem; text-align:center;" class="hidden">
         No hay usuarios. El primero en registrarse será el Master.
       </p>

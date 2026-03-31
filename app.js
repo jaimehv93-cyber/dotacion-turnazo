@@ -36,13 +36,13 @@ const app = {
   init() {
     lucide.createIcons();
     
+    // Escucha masiva pero excluiremos chat del saveAll para no pisar
     db.ref('turnazo').on('value', (snapshot) => {
         const data = snapshot.val() || {};
-        STATE.users = data.users || [];
+        STATE.users = data.users ? Object.values(data.users) : [];
         STATE.stats = data.stats || {};
-        STATE.history = data.history || [];
-        STATE.chat = data.chat || [];
-        STATE.interventions = data.interventions || [];
+        STATE.history = data.history ? Object.values(data.history) : [];
+        STATE.interventions = data.interventions ? Object.values(data.interventions) : [];
         STATE.members = data.members || null;
         STATE.masterPassword = data.masterPassword || 'JaimeMola';
         
@@ -66,9 +66,6 @@ const app = {
         if(!document.getElementById('modal-emisora').classList.contains('hidden')) {
             this.showEmisoraList();
         }
-        if(!document.getElementById('view-chat').classList.contains('hidden')) {
-            this.renderChat();
-        }
         if(!document.getElementById('view-interventions-registry').classList.contains('hidden')) {
             this.renderInterventionsList();
         }
@@ -84,19 +81,49 @@ const app = {
             } else {
                 document.getElementById('first-user-warning').classList.add('hidden');
             }
-            const current = sessionStorage.getItem('dt_current');
-            if(current) {
-                let u = STATE.users.find(x => x.nick === current);
+            
+            const sessionCurrent = sessionStorage.getItem('dt_current');
+            const savedNick = localStorage.getItem('dt_saved_nick');
+            const savedPass = localStorage.getItem('dt_saved_pass');
+
+            if(sessionCurrent) {
+                let u = STATE.users.find(x => x.nick === sessionCurrent);
                 if(u) {
-                    STATE.currentUser = current;
+                    STATE.currentUser = sessionCurrent;
                     STATE.isMaster = !!u.isMaster;
                     this.showView('selection');
                 } else {
                     this.showView('auth');
                 }
+            } else if (savedNick && savedPass) {
+                // Intento de Auto-Login
+                let u = STATE.users.find(x => x.nick === savedNick && x.pass === savedPass);
+                if(u) {
+                    STATE.currentUser = savedNick;
+                    STATE.isMaster = !!u.isMaster;
+                    sessionStorage.setItem('dt_current', savedNick);
+                    this.showView('selection');
+                } else {
+                    this.logout();
+                }
             } else {
-                this.showView('auth');
+                this.logout();
             }
+        }
+    });
+
+    // Escucha INDEPENDIENTE para el chat (Real-Time eficiente)
+    db.ref('turnazo/chat').on('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        // Convertir objeto a array manteniendo el ID de Firebase
+        STATE.chat = Object.keys(data).map(key => ({
+            ...data[key],
+            firebaseId: key
+        }));
+        
+        // Si el chat está visible, re-renderizar al recibir mensaje
+        if(!document.getElementById('view-chat').classList.contains('hidden')) {
+            this.renderChat();
         }
     });
   },
@@ -128,8 +155,10 @@ const app = {
     
     if (mode === 'register') {
         document.getElementById('group-reg-pass').classList.remove('hidden');
+        document.getElementById('group-remember').classList.add('hidden');
     } else {
         document.getElementById('group-reg-pass').classList.add('hidden');
+        document.getElementById('group-remember').classList.remove('hidden');
     }
     document.getElementById('error-msg').innerText = "";
   },
@@ -153,6 +182,15 @@ const app = {
         STATE.currentUser = nick;
         STATE.isMaster = isMaster;
         sessionStorage.setItem('dt_current', nick);
+        
+        if (document.getElementById('auth-remember').checked) {
+            localStorage.setItem('dt_saved_nick', nick);
+            localStorage.setItem('dt_saved_pass', pass);
+        } else {
+            localStorage.removeItem('dt_saved_nick');
+            localStorage.removeItem('dt_saved_pass');
+        }
+        
         this.showView('selection');
     } else {
         const user = STATE.users.find(u => u.nick === nick && u.pass === pass);
@@ -160,6 +198,15 @@ const app = {
             STATE.currentUser = nick;
             STATE.isMaster = !!user.isMaster;
             sessionStorage.setItem('dt_current', nick);
+            
+            if (document.getElementById('auth-remember').checked) {
+                localStorage.setItem('dt_saved_nick', nick);
+                localStorage.setItem('dt_saved_pass', pass);
+            } else {
+                localStorage.removeItem('dt_saved_nick');
+                localStorage.removeItem('dt_saved_pass');
+            }
+            
             this.showView('selection');
         } else {
             errorMsg.innerText = "Credenciales incorrectas.";
@@ -171,6 +218,20 @@ const app = {
       STATE.currentUser = null;
       STATE.isMaster = false;
       sessionStorage.removeItem('dt_current');
+      
+      const sn = localStorage.getItem('dt_saved_nick');
+      const sp = localStorage.getItem('dt_saved_pass');
+      if(sn && sp) {
+          document.getElementById('auth-nick').value = sn;
+          document.getElementById('auth-pass').value = sp;
+          const rem = document.getElementById('auth-remember');
+          if(rem) rem.checked = true;
+      } else {
+          document.getElementById('auth-nick').value = '';
+          document.getElementById('auth-pass').value = '';
+          const rem = document.getElementById('auth-remember');
+          if(rem) rem.checked = false;
+      }
       this.showView('auth');
   },
 
@@ -385,11 +446,10 @@ const app = {
   },
 
   saveAll() {
-      db.ref('turnazo').set({
+      db.ref('turnazo').update({
           users: STATE.users,
           stats: STATE.stats,
           history: STATE.history,
-          chat: STATE.chat,
           interventions: STATE.interventions,
           masterPassword: STATE.masterPassword,
           members: STATE.members
@@ -762,7 +822,7 @@ const app = {
           const isMine = msg.user === STATE.currentUser;
           const bgClass = isMine ? 'mine' : '';
           
-          let delBtn = (STATE.isMaster || isMine) ? `<button class="chat-del" onclick="app.deleteChatMessage('${msg.id}')">Borrar</button>` : '';
+          let delBtn = (STATE.isMaster || isMine) ? `<button class="chat-del" onclick="app.deleteChatMessage('${msg.firebaseId}')">Borrar</button>` : '';
           
           container.innerHTML += `
              <div class="chat-msg ${bgClass}">
@@ -786,23 +846,20 @@ const app = {
       const timeStr = now.toLocaleDateString('es-ES') + ' ' + now.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
       
       const msg = {
-          id: Date.now().toString(),
           user: STATE.currentUser,
           text: text,
-          time: timeStr
+          time: timeStr,
+          timestamp: Date.now() // Útil para ordenar
       };
       
-      STATE.chat.push(msg);
-      this.saveAll();
+      db.ref('turnazo/chat').push(msg); // Usar PUSH para concurrencia real
       input.value = '';
-      this.renderChat();
+      // No hace falta llamar a renderChat aquí, la escucha de Firebase lo hará por nosotros
   },
   
-  deleteChatMessage(id) {
+  deleteChatMessage(firebaseId) {
       if(!confirm("¿Borrar mensaje?")) return;
-      STATE.chat = STATE.chat.filter(m => m.id !== id);
-      this.saveAll();
-      this.renderChat();
+      db.ref('turnazo/chat/' + firebaseId).remove();
   },
 
   // ------------- INTERVENCIONES -------------
