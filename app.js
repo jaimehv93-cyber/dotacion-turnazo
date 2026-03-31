@@ -126,9 +126,27 @@ const app = {
             this.renderChat();
         }
     });
+    // Cierre del menú al hacer click fuera
+    window.addEventListener('click', (e) => {
+        const menu = document.getElementById('main-menu');
+        const trigger = document.getElementById('menu-trigger');
+        if (menu && !menu.contains(e.target) && !trigger.contains(e.target)) {
+            menu.classList.remove('show');
+        }
+    });
+  },
+
+  toggleMenu() {
+    const menu = document.getElementById('main-menu');
+    if (menu) menu.classList.toggle('show');
+  },
+  closeMenu() {
+    const menu = document.getElementById('main-menu');
+    if (menu) menu.classList.remove('show');
   },
 
   showView(viewId) {
+    this.closeMenu();
     document.querySelectorAll('section').forEach(el => el.classList.add('hidden'));
     document.getElementById('view-' + viewId).classList.remove('hidden');
     
@@ -442,6 +460,7 @@ const app = {
 
       this.saveAll();
       alert("Dotación confirmada y guardada.");
+      this.closeMenu();
       this.showHistory();
   },
 
@@ -467,7 +486,10 @@ const app = {
       if(tabObj) tabObj.classList.add('active');
   },
 
-  showHistory() { this.showView('history'); },
+  showHistory() { 
+      this.closeMenu();
+      this.showView('history'); 
+  },
   closeHistory() {
       if(STATE.rolesGenerated.length > 0 && document.getElementById('positions-container').innerHTML !== '') {
           this.showView('review');
@@ -590,6 +612,7 @@ const app = {
 
   // EMISORA
   showEmisoraList() {
+      this.closeMenu();
       document.getElementById('modal-emisora').classList.remove('hidden');
       const container = document.getElementById('emisora-container');
       
@@ -631,6 +654,7 @@ const app = {
 
   // ADMIN PANE
   showAdmin() {
+      this.closeMenu();
       document.getElementById('modal-admin').classList.remove('hidden');
       this.switchAdminTab('members');
       this.renderAdminMembers();
@@ -806,6 +830,7 @@ const app = {
 
   // ------------- CHAT GENERAL -------------
   showChat() {
+      this.closeMenu();
       this.showView('chat');
       this.renderChat();
   },
@@ -864,6 +889,7 @@ const app = {
 
   // ------------- INTERVENCIONES -------------
   showInterventions() {
+      this.closeMenu();
       this.showView('interventions');
       const select = document.getElementById('intervention-date');
       select.innerHTML = '';
