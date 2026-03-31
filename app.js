@@ -54,6 +54,16 @@ const app = {
                 if (!STATE.stats[m]) STATE.stats[m] = { absences: 0 };
             });
             this.saveAll();
+        } else {
+            let changed = false;
+            ['Cupe', 'Pele'].forEach(j => {
+                if (!STATE.members.includes(j)) {
+                    STATE.members.push(j);
+                    if (!STATE.stats[j]) STATE.stats[j] = { absences: 0 };
+                    changed = true;
+                }
+            });
+            if (changed) this.saveAll();
         }
 
         document.getElementById('loading-overlay').classList.add('hidden');
